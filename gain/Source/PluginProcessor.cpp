@@ -22,6 +22,11 @@ GainAudioProcessor::GainAudioProcessor()
                        )
 #endif
 {
+    addParameter(gain = new juce::AudioParameterFloat("gain",                                      // parameter ID
+        "Gain",                                      // parameter name
+        -20.0,
+        20.0,
+        0.5f));                                      // default value
 }
 
 GainAudioProcessor::~GainAudioProcessor()
@@ -143,23 +148,10 @@ void GainAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-
-    float currentGain = std::pow(10.0f, gainVal / 20.0f);;
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-        {
-            channelData[sample] *= currentGain;
-        }
-    }
+       
+    float gainVal = *gain; // gain est un juce::AudioParameterFloat*
+    float currentGain = std::pow(10.0f, gainVal / 20.0f);
+    buffer.applyGain(currentGain);
 }
 
 //==============================================================================
@@ -192,4 +184,14 @@ void GainAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new GainAudioProcessor();
+}
+
+void GainAudioProcessor::setGain(float newGain) {
+    if (gain != nullptr) {
+        gain->setValueNotifyingHost(newGain);
+    }
+}
+
+float GainAudioProcessor::getGain() {
+    return gain->get();
 }

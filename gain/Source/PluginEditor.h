@@ -32,7 +32,9 @@ private:
     GainAudioProcessor& audioProcessor;
 
     juce::Slider gainVolume; // [1]
-    juce::Label gainLabel;
+    juce::TextEditor gainTextEditor;
+
+    juce::Label debug;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GainAudioProcessorEditor)
 };

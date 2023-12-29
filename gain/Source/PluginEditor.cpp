@@ -19,7 +19,7 @@ GainAudioProcessorEditor::GainAudioProcessorEditor (GainAudioProcessor& p)
 
     // these define the parameters of our slider object
     gainVolume.setSliderStyle(juce::Slider::LinearBarVertical);
-    gainVolume.setRange(-20, 20.0, 0.01);
+    gainVolume.setRange(-20.0, 20.0, 0.01);
     gainVolume.setTextBoxStyle(juce::Slider::NoTextBox, false, 90, 0);
     gainVolume.setPopupDisplayEnabled(true, false, this);
     gainVolume.setTextValueSuffix(" dB");
@@ -30,11 +30,24 @@ GainAudioProcessorEditor::GainAudioProcessorEditor (GainAudioProcessor& p)
     // add the listener to the slider
     gainVolume.addListener(this);
 
+    // Configure gainTextEditor
+    gainTextEditor.setText("0.00");
+    gainTextEditor.onTextChange = [this] {
+        float newTextValue = gainTextEditor.getText().getFloatValue();
 
-    // Configure gainLabel
-    gainLabel.setText("Gain: 0.00 dB", juce::dontSendNotification);
-    gainLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(gainLabel);
+        // Update the slider value
+        gainVolume.setValue(newTextValue);
+
+        // Use the public method setGain to update the gain parameter in the processor
+        audioProcessor.setGain(newTextValue);
+
+        // There's no need to directly set a gainVal member in the processor
+        // since the gain is managed by the setGain method and gain parameter
+     };
+    addAndMakeVisible(gainTextEditor);
+
+    debug.setText("debug", juce::dontSendNotification);
+    addAndMakeVisible(debug);
 }
 
 GainAudioProcessorEditor::~GainAudioProcessorEditor()
@@ -63,11 +76,21 @@ void GainAudioProcessorEditor::resized()
     int labelY = gainVolume.getY(); // same vertical position as the slider
     int labelWidth = 100;
     int labelHeight = 20;
-    gainLabel.setBounds(labelX, labelY, labelWidth, labelHeight);
+    gainTextEditor.setBounds(labelX, labelY, labelWidth, labelHeight);
+
+    debug.setBounds(150, 150, 50, 50);
 }
 
-void GainAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
-{
-    audioProcessor.gainVal = gainVolume.getValue();
-    gainLabel.setText("Gain: " + juce::String(audioProcessor.gainVal) + " dB", juce::dontSendNotification);
+void GainAudioProcessorEditor::sliderValueChanged(juce::Slider* slider) {
+    if (slider == &gainVolume) {
+        float sliderValue = gainVolume.getValue();
+
+        // Convertir la valeur du Slider en une valeur normalisée pour le paramètre
+        float normalizedValue = (sliderValue - gainVolume.getMinimum()) / (gainVolume.getMaximum() - gainVolume.getMinimum());
+
+        // Mettre à jour le paramètre
+        audioProcessor.getParameters()[0]->setValueNotifyingHost(normalizedValue);
+
+        debug.setText(juce::String(audioProcessor.getGain()), juce::dontSendNotification);
+    }
 }
